@@ -9,7 +9,7 @@ import (
 )
 
 func usage() {
-	fmt.Fprintf(os.Stderr, "Usage: %s target [wordlist]", os.Args[0])
+	fmt.Fprintf(os.Stderr, "Usage: %s target [wordlist]\n", os.Args[0])
 	os.Exit(1)
 }
 
