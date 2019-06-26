@@ -3,6 +3,7 @@ package fuzzup
 import (
 	"bufio"
 	"crypto/sha256"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"net/http"
@@ -35,11 +36,15 @@ type Record struct {
 }
 
 func fetch(in chan string, out chan Record, errc chan error) {
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+    client := &http.Client{Transport: tr}
 	ledger := make(map[string]Record)
 	h := sha256.New()
 	for url := range in {
 		h.Reset()
-		r, err := http.Get(url)
+		r, err := client.Get(url)
 		if err != nil {
 			errc <- err
 			continue
