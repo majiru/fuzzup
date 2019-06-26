@@ -14,19 +14,17 @@ func usage() {
 }
 
 func main() {
-	var fuzzer *fuzzup.Fuzzer
 	switch n := len(os.Args); {
 	case n < 2, n > 3:
 		usage()
 	case n == 2:
-		fuzzer = fuzzup.NewFuzzer(os.Args[1], os.Stdin)
+		log.Fatal(fuzzup.Fuzz(os.Args[1], os.Stdin))
 	case n == 3:
 		f, err := os.Open(os.Args[2])
 		if err != nil {
 			log.Fatal(err)
 		}
 		defer f.Close()
-		fuzzer = fuzzup.NewFuzzer(os.Args[1], f)
+		log.Fatal(fuzzup.Fuzz(os.Args[1], f))
 	}
-	log.Fatal(fuzzer.Fuzz())
 }

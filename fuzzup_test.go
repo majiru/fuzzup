@@ -5,18 +5,14 @@ import (
 	"testing"
 )
 
-func TestParseTarget(t *testing.T) {
-	url := []string{"https://example.com/vuln?", "=", "&extra=val"}
-	parts := ParseTarget(fmt.Sprintf("%s{{}}%s{{}}%s", url[0], url[1], url[2]))
-	if len(parts) == 0 {
-		t.Errorf("Regexp failed to parse url")
-	}
-	if len(parts) != len(url) {
-		t.Errorf("Number of input strings does not match output.\nIn %q, out %q", url, parts)
-	}
-	for i := range url {
-		if url[i] != parts[i] {
-			t.Errorf("Expected %s, got %s", url[i], parts[i])
-		}
+
+func TestBuildURL(t *testing.T) {
+	outter := []string{"a", "c", "e", "g"}
+	inner := []string{"b", "d", "f"}
+
+	expected := fmt.Sprintf("%s%s%s%s%s%s%s", outter[0], inner[0], outter[1], inner[1], outter[2], inner[2], outter[3])
+	result := buildURL(outter, inner)
+	if result !=  expected {
+		t.Errorf("Expected %s but got %s", expected, result)
 	}
 }
