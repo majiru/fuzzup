@@ -1,7 +1,6 @@
 package fuzzup
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"bufio"
@@ -42,31 +41,70 @@ func buildURL(outter []string, inner []string) string {
 	return fmt.Sprintf("%s%s", s, outter[len(outter)-1])
 }
 
-func (f *Fuzzer) Fuzz() error {
-	client := http.Client{}
-	var sum []byte
+func (f *Fuzzer) read(c chan string, errc chan error) {
 	for i := 1; f.wl.Scan(); i++ {
-		h := sha256.New()
 		line := f.wl.Text()
 		parts := strings.Split(line, "\t")
 		if len(parts) != len(f.target)-1 {
-			return fmt.Errorf("Line %d: Expected %d fields, line has %d", i, len(f.target)-1, len(parts))
+			errc <- fmt.Errorf("Line %d: Expected %d fields, line has %d", i, len(f.target)-1, len(parts))
+			continue
 		}
-		url := buildURL(f.target, parts)
-		r, err := client.Get(url)
+		c <- buildURL(f.target, parts)
+	}
+	close(c)
+}
+
+type Record struct {
+	url string
+	count int
+}
+
+func (f *Fuzzer) fetch(in chan string, out chan Record, errc chan error) {
+	ledger := make(map[string]Record)
+	h := sha256.New()
+	for url := range in {
+		h.Reset()
+		r, err := http.Get(url)
 		if err != nil {
-			return err
+			errc <- err
+			continue
 		}
 		_, err = io.Copy(h, r.Body)
 		if err != nil {
-			return err
+			errc <- err
+			continue
+		}
+		hashStr := fmt.Sprintf("%x", h.Sum(nil))
+		if rec, ok := ledger[hashStr]; ok {
+			rec.count++
+			out <- rec
+		} else {
+			rec = Record{url, 1}
+			ledger[hashStr] = rec
+			out <- rec
 		}
 		r.Body.Close()
-		newsum := h.Sum(nil)
-		if bytes.Compare(sum, newsum) != 0 && i != 1{
-			fmt.Printf("URL %s seems like it might be interesting", url)
-		}
-		sum = newsum
 	}
+	close(out)
+}
+
+func (f *Fuzzer) Fuzz() error {
+	urlchan := make(chan string)
+	recchan := make(chan Record)
+	errchan := make(chan error)
+	go f.read(urlchan, errchan)
+	go f.fetch(urlchan, recchan, errchan)
+
+	for rec := range recchan {
+		select {
+		case err := <- errchan:
+			return err
+		default:
+			if rec.count == 1 {
+				fmt.Printf("Url %s generated a unique page hash\n", rec.url)
+			}
+		}
+	}
+
 	return nil
 }
