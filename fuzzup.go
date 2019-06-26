@@ -6,7 +6,9 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
+	"regexp"
 	"strings"
 )
 
@@ -35,26 +37,27 @@ type Record struct {
 	count int
 }
 
-func fetch(in chan string, out chan Record, errc chan error) {
+func fetch(filter string, in chan string, out chan Record, errc chan error) {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
     client := &http.Client{Transport: tr}
 	ledger := make(map[string]Record)
-	h := sha256.New()
+	rxp := regexp.MustCompile(filter)
 	for url := range in {
-		h.Reset()
 		r, err := client.Get(url)
 		if err != nil {
 			errc <- err
 			continue
 		}
-		_, err = io.Copy(h, r.Body)
+		b, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			errc <- err
 			continue
 		}
-		hashStr := fmt.Sprintf("%x", h.Sum(nil))
+		r.Body.Close()
+		b = rxp.ReplaceAll(b, []byte(""))
+		hashStr := fmt.Sprintf("%x", sha256.Sum256(b))
 		if rec, ok := ledger[hashStr]; ok {
 			rec.count++
 			out <- rec
@@ -63,23 +66,23 @@ func fetch(in chan string, out chan Record, errc chan error) {
 			ledger[hashStr] = rec
 			out <- rec
 		}
-		r.Body.Close()
 	}
+	close(errc)
 	close(out)
 }
 
-func Fuzz(target string, wl io.Reader) error {
+func Fuzz(target string, filter string, wl io.Reader) error {
 	urlchan := make(chan string)
 	recchan := make(chan Record)
 	errchan := make(chan error)
 	go read(strings.Split(target, "{{}}"), bufio.NewScanner(wl), urlchan, errchan)
-	go fetch(urlchan, recchan, errchan)
+	go fetch(filter, urlchan, recchan, errchan)
 
-	for rec := range recchan {
+	for {
 		select {
 		case err := <-errchan:
 			return err
-		default:
+		case rec := <-recchan:
 			if rec.count == 1 {
 				fmt.Printf("Url %s generated a unique page hash\n", rec.url)
 			}
