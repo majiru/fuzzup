@@ -1,18 +1,18 @@
 package fuzzup
 
 import (
+	"bufio"
+	"crypto/sha256"
 	"fmt"
 	"io"
-	"bufio"
-	"regexp"
 	"net/http"
+	"regexp"
 	"strings"
-	"crypto/sha256"
 )
 
 type Fuzzer struct {
 	target []string
-	wl *bufio.Scanner
+	wl     *bufio.Scanner
 }
 
 func ParseTarget(s string) (out []string) {
@@ -55,7 +55,7 @@ func (f *Fuzzer) read(c chan string, errc chan error) {
 }
 
 type Record struct {
-	url string
+	url   string
 	count int
 }
 
@@ -97,7 +97,7 @@ func (f *Fuzzer) Fuzz() error {
 
 	for rec := range recchan {
 		select {
-		case err := <- errchan:
+		case err := <-errchan:
 			return err
 		default:
 			if rec.count == 1 {
