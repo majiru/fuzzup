@@ -15,9 +15,9 @@ import (
 func buildURL(outter []string, inner []string) string {
 	var s string
 	for i := range inner {
-		s = fmt.Sprintf("%s%s%s", s, outter[i], inner[i])
+		s = s + outter[i] + inner[i]
 	}
-	return fmt.Sprintf("%s%s", s, outter[len(outter)-1])
+	return s + outter[len(outter)-1]
 }
 
 func read(target []string, scanner *bufio.Scanner, c chan string, errc chan error) {
