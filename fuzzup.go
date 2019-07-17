@@ -41,7 +41,7 @@ func fetch(filter string, in chan string, out chan Record, errc chan error) {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
-    client := &http.Client{Transport: tr}
+	client := &http.Client{Transport: tr}
 	ledger := make(map[string]Record)
 	rxp := regexp.MustCompile(filter)
 	for url := range in {

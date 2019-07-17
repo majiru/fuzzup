@@ -1,14 +1,13 @@
 package fuzzup
 
 import (
-	"fmt"
-	"testing"
-	"strings"
 	"bufio"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
+	"testing"
 )
-
 
 func TestBuildURL(t *testing.T) {
 	outter := []string{"a", "c", "e", "g"}
@@ -16,7 +15,7 @@ func TestBuildURL(t *testing.T) {
 
 	expected := fmt.Sprintf("%s%s%s%s%s%s%s", outter[0], inner[0], outter[1], inner[1], outter[2], inner[2], outter[3])
 	result := buildURL(outter, inner)
-	if result !=  expected {
+	if result != expected {
 		t.Errorf("Expected %s but got %s", expected, result)
 	}
 }
@@ -62,24 +61,24 @@ func TestRead(t *testing.T) {
 func TestFetch(t *testing.T) {
 	testPages := []string{"Test", "Test2", "uniq", "other"}
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			switch incoming := strings.Trim(r.URL.String(), "/"); incoming {
-			case testPages[0]:
-				fmt.Fprintln(w, "Test")
-			case testPages[1]:
-				fmt.Fprintln(w, "Test")
-			case testPages[2]:
-				fmt.Fprintln(w, "Test2")
-			case testPages[3]:
-				fmt.Fprintln(w, "Test3")
-			default:
-				t.Errorf("Unknown request %s", incoming)
-			}
+		switch incoming := strings.Trim(r.URL.String(), "/"); incoming {
+		case testPages[0]:
+			fmt.Fprintln(w, "Test")
+		case testPages[1]:
+			fmt.Fprintln(w, "Test")
+		case testPages[2]:
+			fmt.Fprintln(w, "Test2")
+		case testPages[3]:
+			fmt.Fprintln(w, "Test3")
+		default:
+			t.Errorf("Unknown request %s", incoming)
+		}
 	}))
 	defer ts.Close()
 	in := make(chan string)
 	out := make(chan Record)
 	errc := make(chan error)
-	go func(){
+	go func() {
 		for err := range errc {
 			t.Errorf("%q", err)
 		}
