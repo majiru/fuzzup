@@ -1,11 +1,15 @@
 # Fuzzer for URL Parameters
 
 ## Usage 
-`./fuzzup 'https://example.com/page?{{}}={{}}&other=val' wordlist.txt`
+`./fuzzup url regexp [wordlist]`
+
+## Example
+`./fuzzup 'https://example.com/page?{{}}={{}}&other=val' 'Requested Page:' wordlist.txt`
 
 Fuzzup will read the wordlist and insert tab separated values into the url.
-The response is hashed and logged, any changes in the hashed page are reported
-to the user, with the url that triggered the change.
+Lines matching the regexp are stripped from the response before it is hashed
+and logged. Pages are reported to the user if they are the first page
+with a unique hash.
 
 For example, given the following wordlist:
 ```
